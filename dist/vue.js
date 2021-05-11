@@ -903,6 +903,7 @@ function observe (value, asRootData) {
 
 /**
  * Define a reactive property on an Object.
+ * 响应式参数
  */
 function defineReactive$$1 (
   obj,
@@ -922,6 +923,7 @@ function defineReactive$$1 (
   var setter = property && property.set;
 
   var childOb = observe(val);
+  debugger
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,

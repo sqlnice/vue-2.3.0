@@ -127,6 +127,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 
 /**
  * Define a reactive property on an Object.
+ * 响应式参数
  */
 export function defineReactive (
   obj: Object,
@@ -146,6 +147,7 @@ export function defineReactive (
   const setter = property && property.set
 
   let childOb = observe(val)
+  debugger
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
