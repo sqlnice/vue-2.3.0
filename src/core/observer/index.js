@@ -147,7 +147,6 @@ export function defineReactive (
   const setter = property && property.set
 
   let childOb = observe(val)
-  debugger
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
