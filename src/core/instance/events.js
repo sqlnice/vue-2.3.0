@@ -2,13 +2,14 @@
 
 import { updateListeners } from '../vdom/helpers/index'
 import { toArray, tip, hyphenate, formatComponentName } from '../util/index'
-
+// 初始化事件相关的属性，_parentListeners是父组件中绑定在自定义标签上的事件，供子组件处理。
 export function initEvents (vm: Component) {
   vm._events = Object.create(null)
   vm._hasHookEvent = false
   // init parent attached events
   const listeners = vm.$options._parentListeners
   if (listeners) {
+    // _parentListeners是父组件中绑定在自定义标签上的事件，供子组件处理。
     updateComponentListeners(vm, listeners)
   }
 }

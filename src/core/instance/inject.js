@@ -34,6 +34,7 @@ export function initInjections (vm: Component) {
   }
 }
 
+// 上面和这个方法共同将父组件_provided中定义的值通过inject注入到子组件，且这些属性不会被观察
 export function resolveInject (inject: any, vm: Component): ?Object {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached

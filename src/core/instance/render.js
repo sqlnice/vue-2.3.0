@@ -25,7 +25,7 @@ import { checkKeyCodes } from './render-helpers/check-keycodes'
 import { bindObjectProps } from './render-helpers/bind-object-props'
 import { renderStatic, markOnce } from './render-helpers/render-static'
 import { resolveSlots, resolveScopedSlots } from './render-helpers/resolve-slots'
-
+// 这里给vm添加了一些虚拟dom、slot等相关的属性和方法。
 export function initRender (vm: Component) {
   vm._vnode = null // the root of the child tree
   vm._staticTrees = null
@@ -37,9 +37,15 @@ export function initRender (vm: Component) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  //将createElement fn绑定到这个实例  
+  //使我们在它里面得到适当的渲染上下文。  
+  //参数顺序:tag, data, children, normalizationType, alwaynormalize  
+  //内部版本由模板编译的呈现函数使用  
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
+  //在公共版本中使用  
+  //用户编写的呈现函数。 
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 }
 

@@ -278,8 +278,9 @@ export function mergeOptions (
   if (typeof child === 'function') {
     child = child.options
   }
-
+  // 格式化child的Props
   normalizeProps(child)
+  // 格式化child的Directive
   normalizeDirectives(child)
   const extendsFrom = child.extends
   if (extendsFrom) {

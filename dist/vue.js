@@ -923,7 +923,6 @@ function defineReactive$$1 (
   var setter = property && property.set;
 
   var childOb = observe(val);
-  debugger
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -1290,8 +1289,9 @@ function mergeOptions (
   if (typeof child === 'function') {
     child = child.options;
   }
-
+  // 格式化child的Props
   normalizeProps(child);
+  // 格式化child的Directive
   normalizeDirectives(child);
   var extendsFrom = child.extends;
   if (extendsFrom) {
@@ -2048,6 +2048,7 @@ function initEvents (vm) {
   // init parent attached events
   var listeners = vm.$options._parentListeners;
   if (listeners) {
+    // _parentListeners是父组件中绑定在自定义标签上的事件，供子组件处理。
     updateComponentListeners(vm, listeners);
   }
 }
@@ -2232,6 +2233,7 @@ function initLifecycle (vm) {
 
   // locate first non-abstract parent
   var parent = options.parent;
+  // 判断是否是抽象组件，组件的父子关系建立会跳过抽象组件，抽象组件比如keep-alive、transition等。
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent;
@@ -2240,7 +2242,7 @@ function initLifecycle (vm) {
   }
 
   vm.$parent = parent;
-  vm.$root = parent ? parent.$root : vm;
+  vm.$root = parent ? parent.$root : vm; // 所有的子组件$root都指向顶级组件
 
   vm.$children = [];
   vm.$refs = {};
@@ -2914,6 +2916,7 @@ function proxy (target, sourceKey, key) {
 }
 
 function initState (vm) {
+  // 当前实例创建观察者
   vm._watchers = [];
   var opts = vm.$options;
   if (opts.props) { initProps(vm, opts.props); }
@@ -3206,6 +3209,7 @@ function initInjections (vm) {
   }
 }
 
+// 上面和这个方法共同将父组件_provided中定义的值通过inject注入到子组件，且这些属性不会被观察
 function resolveInject (inject, vm) {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached
@@ -3784,9 +3788,15 @@ function initRender (vm) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  //将createElement fn绑定到这个实例  
+  //使我们在它里面得到适当的渲染上下文。  
+  //参数顺序:tag, data, children, normalizationType, alwaynormalize  
+  //内部版本由模板编译的呈现函数使用  
   vm._c = function (a, b, c, d) { return createElement(vm, a, b, c, d, false); };
   // normalization is always applied for the public version, used in
   // user-written render functions.
+  //在公共版本中使用  
+  //用户编写的呈现函数。 
   vm.$createElement = function (a, b, c, d) { return createElement(vm, a, b, c, d, true); };
 }
 
@@ -3879,6 +3889,7 @@ function initMixin (Vue) {
 
     var startTag, endTag;
     /* istanbul ignore if */
+    // 性能统计相关
     if ("development" !== 'production' && config.performance && mark) {
       startTag = "vue-perf-init:" + (vm._uid);
       endTag = "vue-perf-end:" + (vm._uid);
@@ -3886,8 +3897,12 @@ function initMixin (Vue) {
     }
 
     // a flag to avoid this being observed
+    // 监听对象变化时用于过滤vue实例
+    // 可在log(vue实例)的$root下面找到
     vm._isVue = true;
     // merge options
+    // 合并options
+    // _isComponent是只有在内部创建组件时才会加上true
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
@@ -3906,16 +3921,24 @@ function initMixin (Vue) {
     }
     // expose real self
     vm._self = vm;
+    // 初始化生命周期
     initLifecycle(vm);
+    // 初始化事件相关的属性
     initEvents(vm);
+    // 这里给vm添加了一些虚拟dom、slot等相关的属性和方法。
     initRender(vm);
+    // 调用beforeCreate钩子
     callHook(vm, 'beforeCreate');
+    // 处理注入
     initInjections(vm); // resolve injections before data/props
     initState(vm);
     initProvide(vm); // resolve provide after data/props
+    // 调用created钩子
+    // create阶段，基本就是对传入数据的格式化、数据的双向绑定、以及一些属性的初始化
     callHook(vm, 'created');
 
     /* istanbul ignore if */
+    // 性能相关
     if ("development" !== 'production' && config.performance && mark) {
       vm._name = formatComponentName(vm, false);
       mark(endTag);
@@ -3947,7 +3970,9 @@ function initInternalComponent (vm, options) {
 
 function resolveConstructorOptions (Ctor) {
   var options = Ctor.options;
+  // 有super属性，说明Ctor是通过Vue.extend()方法创建的子类
   if (Ctor.super) {
+    // Ctor就是vm.constructor也就是Vue对象，在/src/core/global-api/index文件中，我们给Vue添加了一些全局的属性或方法。
     var superOptions = resolveConstructorOptions(Ctor.super);
     var cachedSuperOptions = Ctor.superOptions;
     if (superOptions !== cachedSuperOptions) {
@@ -4007,6 +4032,7 @@ function Vue$3 (options) {
     !(this instanceof Vue$3)) {
     warn('Vue is a constructor and should be called with the `new` keyword');
   }
+  // 此方法是在`initMixin`中添加的
   this._init(options);
 }
 
@@ -9175,8 +9201,11 @@ function baseCompile (
   template,
   options
 ) {
+  // 1 解析template 生成ast
   var ast = parse(template.trim(), options);
+  // 2 对ast进行优化 分析出静态不变的内容
   optimize(ast, options);
+  // 3 根据ast生成render函数和staticRenderFns数组
   var code = generate(ast, options);
   return {
     ast: ast,
@@ -9459,6 +9488,7 @@ var compileToFunctions = ref$1.compileToFunctions;
 /*  */
 
 var idToTemplate = cached(function (id) {
+  // 类似document.querySelector
   var el = query(id);
   return el && el.innerHTML
 });
@@ -9479,6 +9509,7 @@ Vue$3.prototype.$mount = function (
   }
 
   var options = this.$options;
+  // 判断是否有render函数
   // resolve template/el and convert to render function
   if (!options.render) {
     var template = options.template;

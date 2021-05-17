@@ -11,8 +11,11 @@ function baseCompile (
   template: string,
   options: CompilerOptions
 ): CompiledResult {
+  // 1 解析template 生成ast
   const ast = parse(template.trim(), options)
+  // 2 对ast进行优化 分析出静态不变的内容
   optimize(ast, options)
+  // 3 根据ast生成render函数和staticRenderFns数组
   const code = generate(ast, options)
   return {
     ast,

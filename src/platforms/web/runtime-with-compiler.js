@@ -10,6 +10,7 @@ import { shouldDecodeNewlines } from './util/compat'
 import { compileToFunctions } from './compiler/index'
 
 const idToTemplate = cached(id => {
+  // 类似document.querySelector
   const el = query(id)
   return el && el.innerHTML
 })
@@ -30,6 +31,7 @@ Vue.prototype.$mount = function (
   }
 
   const options = this.$options
+  // 判断是否有render函数
   // resolve template/el and convert to render function
   if (!options.render) {
     let template = options.template

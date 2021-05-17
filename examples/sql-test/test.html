@@ -8,15 +8,39 @@
     <script src="../../dist/vue.js"></script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <one-component @submit="submit" :age="18"></one-component>
+    </div>
     <script>
       const vue = new Vue({
         el: '#app',
+        props: {
+          name: 'sql',
+        },
         data: {
           message: '第一个vue实例',
         },
+        components: {
+          oneComponent: {
+            template: `<div>
+              <h1>{{name}}</h1><h2>static h2</h2>
+              </div>`,
+            props: {
+              age: { required: true },
+            },
+            data: function () {
+              return {
+                name: 'oneComponent',
+              };
+            },
+          },
+        },
+        methods: {
+          submit() {
+            console.log(1);
+          },
+        },
       });
-      console.log(vue);
     </script>
   </body>
 </html>

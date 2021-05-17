@@ -20,6 +20,7 @@ export function initMixin (Vue: Class<Component>) {
 
     let startTag, endTag
     /* istanbul ignore if */
+    // 性能统计相关
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       startTag = `vue-perf-init:${vm._uid}`
       endTag = `vue-perf-end:${vm._uid}`
@@ -27,8 +28,12 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     // a flag to avoid this being observed
+    // 监听对象变化时用于过滤vue实例
+    // 可在log(vue实例)的$root下面找到
     vm._isVue = true
     // merge options
+    // 合并options
+    // _isComponent是只有在内部创建组件时才会加上true
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
@@ -49,16 +54,24 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+    // 初始化生命周期
     initLifecycle(vm)
+    // 初始化事件相关的属性
     initEvents(vm)
+    // 这里给vm添加了一些虚拟dom、slot等相关的属性和方法。
     initRender(vm)
+    // 调用beforeCreate钩子
     callHook(vm, 'beforeCreate')
+    // 处理注入
     initInjections(vm) // resolve injections before data/props
     initState(vm)
     initProvide(vm) // resolve provide after data/props
+    // 调用created钩子
+    // create阶段，基本就是对传入数据的格式化、数据的双向绑定、以及一些属性的初始化
     callHook(vm, 'created')
 
     /* istanbul ignore if */
+    // 性能相关
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       vm._name = formatComponentName(vm, false)
       mark(endTag)
@@ -90,7 +103,9 @@ function initInternalComponent (vm: Component, options: InternalComponentOptions
 
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
+  // 有super属性，说明Ctor是通过Vue.extend()方法创建的子类
   if (Ctor.super) {
+    // Ctor就是vm.constructor也就是Vue对象，在/src/core/global-api/index文件中，我们给Vue添加了一些全局的属性或方法。
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
     if (superOptions !== cachedSuperOptions) {

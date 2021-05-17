@@ -24,6 +24,7 @@ export function initLifecycle (vm: Component) {
 
   // locate first non-abstract parent
   let parent = options.parent
+  // 判断是否是抽象组件，组件的父子关系建立会跳过抽象组件，抽象组件比如keep-alive、transition等。
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
@@ -32,7 +33,7 @@ export function initLifecycle (vm: Component) {
   }
 
   vm.$parent = parent
-  vm.$root = parent ? parent.$root : vm
+  vm.$root = parent ? parent.$root : vm // 所有的子组件$root都指向顶级组件
 
   vm.$children = []
   vm.$refs = {}
