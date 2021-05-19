@@ -124,6 +124,8 @@ function callActivatedHooks (queue) {
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
  */
+// watcher队列
+// 我们的watcher有从小到大的唯一id，在页面更新时，会按照一定的顺序依次更新，这里做了一个判断，如果watcher列表正在更新，则把新的watcher添加到对应的位置，并更新。否则，在下一个nextTick中执行flushSchedulerQueue。
 export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
   if (has[id] == null) {

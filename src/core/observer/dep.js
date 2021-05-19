@@ -15,8 +15,8 @@ export default class Dep {
   subs: Array<Watcher>;
 
   constructor () {
-    this.id = uid++
-    this.subs = []
+    this.id = uid++ // Dep对象的唯一标识
+    this.subs = [] // 保存watcher
   }
 
   addSub (sub: Watcher) {

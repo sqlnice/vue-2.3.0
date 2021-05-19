@@ -10,8 +10,66 @@
   <body>
     <div id="app">
       <one-component @submit="submit" :age="18"></one-component>
+      <div id="test"></div>
+      <div id="test2"></div>
     </div>
     <script>
+      let obj = {
+        a: 1,
+        b: 2,
+      };
+      function Dep() {
+        this.subs = [];
+        this.addSub = function (watcher) {
+          this.subs.push(watcher);
+        };
+        this.notify = function () {
+          this.subs.forEach((watcher) => {
+            watcher.update();
+          });
+        };
+      }
+      function Observer(obj, key, value) {
+        const dep = new Dep();
+        // 递归处理对象
+        if (Object.prototype.toString.call(value) == '[object Object]') {
+          debugger;
+          Object.keys(value).forEach(function (key) {
+            new Observer(value, key, value[key]);
+          });
+        }
+        Object.defineProperty(obj, key, {
+          enumerable: true,
+          configurable: true,
+          get: function () {
+            if (Dep.target) {
+              // 添加事件
+              dep.addSub(Dep.target);
+            }
+            return value;
+          },
+          set: function (newVal) {
+            value = newVal;
+            dep.notify(); // 触发事件
+          },
+        });
+      }
+      function Watcher(fn) {
+        this.update = function () {
+          Dep.target = this;
+          fn();
+          Dep.target = null;
+        };
+        this.update();
+      }
+
+      Object.keys(obj).map((key) => {
+        new Observer(obj, key, obj[key]);
+      });
+      new Watcher(function () {
+        document.querySelector('#test').innerHTML = obj.a;
+      });
+
       const vue = new Vue({
         el: '#app',
         props: {

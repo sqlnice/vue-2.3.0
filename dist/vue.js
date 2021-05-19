@@ -705,8 +705,8 @@ var uid = 0;
  * directives subscribing to it.
  */
 var Dep = function Dep () {
-  this.id = uid++;
-  this.subs = [];
+  this.id = uid++; // Dep对象的唯一标识
+  this.subs = []; // 保存watcher
 };
 
 Dep.prototype.addSub = function addSub (sub) {
@@ -774,6 +774,7 @@ var arrayMethods = Object.create(arrayProto);[
     var result = original.apply(this, args);
     var ob = this.__ob__;
     var inserted;
+    // push、unshift、splice参数大于2时，要重新调用ob.observeArray，因为这三种情况都是像数组中添加新的元素，所以需要重新观察每个子元素。
     switch (method) {
       case 'push':
         inserted = args;
@@ -815,9 +816,11 @@ var observerState = {
  */
 var Observer = function Observer (value) {
   this.value = value;
-  this.dep = new Dep();
+  this.dep = new Dep(); // 每一个observer都有一个dep
   this.vmCount = 0;
+  // 添加__ob__来标示value有对应的Observer
   def(value, '__ob__', this);
+  // 单独处理数组
   if (Array.isArray(value)) {
     var augment = hasProto
       ? protoAugment
@@ -825,6 +828,7 @@ var Observer = function Observer (value) {
     augment(value, arrayMethods, arrayKeys);
     this.observeArray(value);
   } else {
+    // 处理对象
     this.walk(value);
   }
 };
@@ -834,6 +838,7 @@ var Observer = function Observer (value) {
  * getter/setters. This method should only be called when
  * value type is Object.
  */
+// 给对象中的每个属性添加getters/setters
 Observer.prototype.walk = function walk (obj) {
   var keys = Object.keys(obj);
   for (var i = 0; i < keys.length; i++) {
@@ -844,6 +849,7 @@ Observer.prototype.walk = function walk (obj) {
 /**
  * Observe a list of Array items.
  */
+// 观察数组
 Observer.prototype.observeArray = function observeArray (items) {
   for (var i = 0, l = items.length; i < l; i++) {
     observe(items[i]);
@@ -879,6 +885,7 @@ function copyAugment (target, src, keys) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
+// 为所有value为对象的值递归地观察
 function observe (value, asRootData) {
   if (!isObject(value)) {
     return
@@ -919,6 +926,7 @@ function defineReactive$$1 (
   }
 
   // cater for pre-defined getter/setters
+  // 用户自定义的
   var getter = property && property.get;
   var setter = property && property.set;
 
@@ -946,6 +954,7 @@ function defineReactive$$1 (
         return
       }
       /* eslint-enable no-self-compare */
+      // 开发模式输出错误
       if ("development" !== 'production' && customSetter) {
         customSetter();
       }
@@ -2638,6 +2647,8 @@ function callActivatedHooks (queue) {
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
  */
+// watcher队列
+// 我们的watcher有从小到大的唯一id，在页面更新时，会按照一定的顺序依次更新，这里做了一个判断，如果watcher列表正在更新，则把新的watcher添加到对应的位置，并更新。否则，在下一个nextTick中执行flushSchedulerQueue。
 function queueWatcher (watcher) {
   var id = watcher.id;
   if (has[id] == null) {
@@ -2673,7 +2684,7 @@ var uid$2 = 0;
 var Watcher = function Watcher (
   vm,
   expOrFn,
-  cb,
+  cb, // 回调
   options
 ) {
   this.vm = vm;
@@ -2708,9 +2719,10 @@ var Watcher = function Watcher (
         'Watcher only accepts simple dot-delimited paths. ' +
         'For full control, use a function instead.',
         vm
-      );
+        );
+      }
     }
-  }
+  // 执行this.get
   this.value = this.lazy
     ? undefined
     : this.get();
@@ -2719,6 +2731,7 @@ var Watcher = function Watcher (
 /**
  * Evaluate the getter, and re-collect dependencies.
  */
+// 评估getter，并重新收集依赖项。  
 Watcher.prototype.get = function get () {
   pushTarget(this);
   var value;
@@ -2734,6 +2747,7 @@ Watcher.prototype.get = function get () {
   }
   // "touch" every property so they are all tracked as
   // dependencies for deep watching
+  // 深度监听
   if (this.deep) {
     traverse(value);
   }
@@ -2783,6 +2797,7 @@ Watcher.prototype.cleanupDeps = function cleanupDeps () {
  * Subscriber interface.
  * Will be called when a dependency changes.
  */
+// 依赖项变化时触发
 Watcher.prototype.update = function update () {
   /* istanbul ignore else */
   if (this.lazy) {
@@ -2798,8 +2813,10 @@ Watcher.prototype.update = function update () {
  * Scheduler job interface.
  * Will be called by the scheduler.
  */
+// 更新模板
 Watcher.prototype.run = function run () {
   if (this.active) {
+    // 调用this.get来获取修改之后的value值
     var value = this.get();
     if (
       value !== this.value ||

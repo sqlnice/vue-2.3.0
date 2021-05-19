@@ -4,7 +4,7 @@
  */
 
 import { def } from '../util/index'
-
+// VUE改写数组的方法，七个
 const arrayProto = Array.prototype
 export const arrayMethods = Object.create(arrayProto)
 
@@ -34,6 +34,7 @@ export const arrayMethods = Object.create(arrayProto)
     const result = original.apply(this, args)
     const ob = this.__ob__
     let inserted
+    // push、unshift、splice参数大于2时，要重新调用ob.observeArray，因为这三种情况都是像数组中添加新的元素，所以需要重新观察每个子元素。
     switch (method) {
       case 'push':
         inserted = args

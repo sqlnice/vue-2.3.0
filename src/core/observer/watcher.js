@@ -22,7 +22,7 @@ let uid = 0
 export default class Watcher {
   vm: Component;
   expression: string;
-  cb: Function;
+  cb: Function; // 回调
   id: number;
   deep: boolean;
   user: boolean;
@@ -40,7 +40,7 @@ export default class Watcher {
   constructor (
     vm: Component,
     expOrFn: string | Function,
-    cb: Function,
+    cb: Function, // 回调
     options?: Object
   ) {
     this.vm = vm
@@ -77,9 +77,10 @@ export default class Watcher {
           'Watcher only accepts simple dot-delimited paths. ' +
           'For full control, use a function instead.',
           vm
-        )
+          )
+        }
       }
-    }
+    // 执行this.get
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -88,6 +89,7 @@ export default class Watcher {
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
+  // 评估getter，并重新收集依赖项。  
   get () {
     pushTarget(this)
     let value
@@ -103,6 +105,7 @@ export default class Watcher {
     }
     // "touch" every property so they are all tracked as
     // dependencies for deep watching
+    // 深度监听
     if (this.deep) {
       traverse(value)
     }
@@ -150,6 +153,7 @@ export default class Watcher {
    * Subscriber interface.
    * Will be called when a dependency changes.
    */
+  // 依赖项变化时触发
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
@@ -165,8 +169,10 @@ export default class Watcher {
    * Scheduler job interface.
    * Will be called by the scheduler.
    */
+  // 更新模板
   run () {
     if (this.active) {
+      // 调用this.get来获取修改之后的value值
       const value = this.get()
       if (
         value !== this.value ||

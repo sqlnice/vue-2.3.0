@@ -34,13 +34,15 @@ export const observerState = {
 export class Observer {
   value: any;
   dep: Dep;
-  vmCount: number; // number of vms that has this object as root $data
+  vmCount: number; // 把该对象作为root $data的vm个数
 
   constructor (value: any) {
     this.value = value
-    this.dep = new Dep()
+    this.dep = new Dep() // 每一个observer都有一个dep
     this.vmCount = 0
+    // 添加__ob__来标示value有对应的Observer
     def(value, '__ob__', this)
+    // 单独处理数组
     if (Array.isArray(value)) {
       const augment = hasProto
         ? protoAugment
@@ -48,6 +50,7 @@ export class Observer {
       augment(value, arrayMethods, arrayKeys)
       this.observeArray(value)
     } else {
+      // 处理对象
       this.walk(value)
     }
   }
@@ -57,6 +60,7 @@ export class Observer {
    * getter/setters. This method should only be called when
    * value type is Object.
    */
+  // 给对象中的每个属性添加getters/setters
   walk (obj: Object) {
     const keys = Object.keys(obj)
     for (let i = 0; i < keys.length; i++) {
@@ -67,6 +71,7 @@ export class Observer {
   /**
    * Observe a list of Array items.
    */
+  // 观察数组
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
       observe(items[i])
@@ -103,6 +108,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
+// 为所有value为对象的值递归地观察
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value)) {
     return
@@ -143,6 +149,7 @@ export function defineReactive (
   }
 
   // cater for pre-defined getter/setters
+  // 用户自定义的
   const getter = property && property.get
   const setter = property && property.set
 
@@ -170,6 +177,7 @@ export function defineReactive (
         return
       }
       /* eslint-enable no-self-compare */
+      // 开发模式输出错误
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
       }
