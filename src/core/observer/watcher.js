@@ -44,6 +44,7 @@ export default class Watcher {
     options?: Object
   ) {
     this.vm = vm
+    // 存放订阅者实例
     vm._watchers.push(this)
     // options
     if (options) {
@@ -66,6 +67,7 @@ export default class Watcher {
       ? expOrFn.toString()
       : ''
     // parse expression for getter
+    // 把表达式expOrFn解析成getter
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
@@ -89,11 +91,20 @@ export default class Watcher {
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
-  // 评估getter，并重新收集依赖项。  
+  // 获得getter，并重新收集依赖项。  
   get () {
+    // 将自身watcher观察者实例设置给Dep.target，用以依赖收集
     pushTarget(this)
     let value
     const vm = this.vm
+     /*
+      执行了getter操作，看似执行了渲染操作，其实是执行了依赖收集。
+      在将Dep.target设置为自身观察者实例以后，执行getter操作。
+      譬如说现在的的data中可能有a、b、c三个数据，getter渲染需要依赖a跟c，
+      那么在执行getter的时候就会触发a跟c两个数据的getter函数，
+      在getter函数中即可判断Dep.target是否存在然后完成依赖收集，
+      将该观察者对象放入闭包中的Dep的subs中去。
+    */
     if (this.user) {
       try {
         value = this.getter.call(vm, vm)
@@ -105,7 +116,7 @@ export default class Watcher {
     }
     // "touch" every property so they are all tracked as
     // dependencies for deep watching
-    // 深度监听
+    // 深度递归监听
     if (this.deep) {
       traverse(value)
     }
@@ -159,8 +170,10 @@ export default class Watcher {
     if (this.lazy) {
       this.dirty = true
     } else if (this.sync) {
+      // 同步则直接渲染
       this.run()
     } else {
+      // 异步推送到观察者队列中，由调度者调用
       queueWatcher(this)
     }
   }
@@ -183,8 +196,10 @@ export default class Watcher {
         this.deep
       ) {
         // set new value
+        // 设置新的值
         const oldValue = this.value
         this.value = value
+        // 触发回调渲染视图
         if (this.user) {
           try {
             this.cb.call(this.vm, value, oldValue)

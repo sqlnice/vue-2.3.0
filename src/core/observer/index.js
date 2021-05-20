@@ -31,6 +31,7 @@ export const observerState = {
  * object's property keys into getter/setters that
  * collect dependencies and dispatches updates.
  */
+// 遍历对象的所有属性并将其进行双向绑定s
 export class Observer {
   value: any;
   dep: Dep;
@@ -40,14 +41,18 @@ export class Observer {
     this.value = value
     this.dep = new Dep() // 每一个observer都有一个dep
     this.vmCount = 0
-    // 添加__ob__来标示value有对应的Observer
+    // 添加__ob__来标示value有对应的Observer，在下面121行observer方法中会进行判断
     def(value, '__ob__', this)
-    // 单独处理数组
+    // 如果是数组，将修改后可以截获响应的数组方法替换掉该数组的原型中的原生方法，达到监听数组数据变化响应的效果。
+
+    // 这里如果当前浏览器支持__proto__属性，则直接覆盖当前数组对象原型上的原生数组方法，
+    // 如果不支持该属性，则直接覆盖数组对象的原型
     if (Array.isArray(value)) {
       const augment = hasProto
-        ? protoAugment
-        : copyAugment
+        ? protoAugment // 直接覆盖原型的方法来修改目标对象
+        : copyAugment // 定义（覆盖）目标对象或数组的某一个方法
       augment(value, arrayMethods, arrayKeys)
+      // 如果是数组则需要遍历数组的每一个成员进行observe
       this.observeArray(value)
     } else {
       // 处理对象
@@ -109,14 +114,18 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 // 为所有value为对象的值递归地观察
+// 单例模式
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value)) {
     return
   }
   let ob: Observer | void
+  // 判断是否有observer实例
+  // Vue的响应式数据都会有一个__ob__的属性作为标记，里面存放了该属性的观察器，也就是Observer的实例，防止重复绑定。
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
   } else if (
+    // 这里的判断是为了确保value是单纯的对象，而不是函数或者是Regexp等情况
     observerState.shouldConvert &&
     !isServerRendering() &&
     (Array.isArray(value) || isPlainObject(value)) &&
@@ -126,6 +135,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     ob = new Observer(value)
   }
   if (asRootData && ob) {
+    // 如果是根数据则计数，后面Observer中的observer的asRootData非true
     ob.vmCount++
   }
   return ob

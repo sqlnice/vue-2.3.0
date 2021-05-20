@@ -29,7 +29,9 @@ const sharedPropertyDefinition = {
   get: noop,
   set: noop
 }
-
+// 添加代理
+// 将props上的数据代理到vm上
+// 我们就可以使用this.text代替this.props.text了
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -44,8 +46,11 @@ export function initState (vm: Component) {
   // 当前实例创建观察者
   vm._watchers = []
   const opts = vm.$options
+  // 初始化Props
   if (opts.props) initProps(vm, opts.props)
+  // 初始化Methods
   if (opts.methods) initMethods(vm, opts.methods)
+  // 初始化data
   if (opts.data) {
     initData(vm)
   } else {
@@ -106,10 +111,12 @@ function initProps (vm: Component, propsOptions: Object) {
 }
 
 function initData (vm: Component) {
+  // 拿到data
   let data = vm.$options.data
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
+    // 判断对象
   if (!isPlainObject(data)) {
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
@@ -119,21 +126,28 @@ function initData (vm: Component) {
     )
   }
   // proxy data on instance
+  /// 遍历data对象
   const keys = Object.keys(data)
   const props = vm.$options.props
   let i = keys.length
+  // 遍历data中的数据
   while (i--) {
+    // 保证data中的key与props中的key不重复，props优先
     if (props && hasOwn(props, keys[i])) {
       process.env.NODE_ENV !== 'production' && warn(
         `The data property "${keys[i]}" is already declared as a prop. ` +
         `Use prop default value instead.`,
         vm
       )
+      // 是否是保留字段
     } else if (!isReserved(keys[i])) {
+      // 将data上面的属性代理到了vm实例上
       proxy(vm, `_data`, keys[i])
     }
   }
   // observe data
+  // 开始对数据进行绑定，这里有尤大大的注释asRootData，
+  // 这步作为根数据，下面会进行递归observe进行对深层对象的绑定
   observe(data, true /* asRootData */)
 }
 

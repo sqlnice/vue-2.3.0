@@ -6,6 +6,7 @@
 import { def } from '../util/index'
 // VUE改写数组的方法，七个
 const arrayProto = Array.prototype
+// 创建一个新的数组对象，修改该对象上的数组的七个方法，防止污染原生数组方法
 export const arrayMethods = Object.create(arrayProto)
 
 /**
@@ -22,6 +23,7 @@ export const arrayMethods = Object.create(arrayProto)
 ]
 .forEach(function (method) {
   // cache original method
+  // 缓存原生的方法
   const original = arrayProto[method]
   def(arrayMethods, method, function mutator () {
     // avoid leaking arguments:
@@ -31,6 +33,7 @@ export const arrayMethods = Object.create(arrayProto)
     while (i--) {
       args[i] = arguments[i]
     }
+    // 调用原生的数组方法
     const result = original.apply(this, args)
     const ob = this.__ob__
     let inserted
@@ -48,6 +51,7 @@ export const arrayMethods = Object.create(arrayProto)
     }
     if (inserted) ob.observeArray(inserted)
     // notify change
+    // dep通知所有注册的观察者进行响应式处理
     ob.dep.notify()
     return result
   })

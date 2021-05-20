@@ -716,13 +716,13 @@ Dep.prototype.addSub = function addSub (sub) {
 Dep.prototype.removeSub = function removeSub (sub) {
   remove(this.subs, sub);
 };
-
+// 依赖收集，当存在Dep.target的时候添加观察者对象
 Dep.prototype.depend = function depend () {
   if (Dep.target) {
     Dep.target.addDep(this);
   }
 };
-
+// 通知所有订阅者
 Dep.prototype.notify = function notify () {
   // stabilize the subscriber list first
   var subs = this.subs.slice();
@@ -731,6 +731,10 @@ Dep.prototype.notify = function notify () {
   }
 };
 
+// the current target watcher being evaluated.
+// this is globally unique because there could be only one
+// watcher being evaluated at any time.
+// 依赖收集完需要将Dep.target设为null，防止后面重复添加依赖
 Dep.target = null;
 var targetStack = [];
 
@@ -749,6 +753,7 @@ function popTarget () {
  */
 
 var arrayProto = Array.prototype;
+// 创建一个新的数组对象，修改该对象上的数组的七个方法，防止污染原生数组方法
 var arrayMethods = Object.create(arrayProto);[
   'push',
   'pop',
@@ -760,6 +765,7 @@ var arrayMethods = Object.create(arrayProto);[
 ]
 .forEach(function (method) {
   // cache original method
+  // 缓存原生的方法
   var original = arrayProto[method];
   def(arrayMethods, method, function mutator () {
     var arguments$1 = arguments;
@@ -771,6 +777,7 @@ var arrayMethods = Object.create(arrayProto);[
     while (i--) {
       args[i] = arguments$1[i];
     }
+    // 调用原生的数组方法
     var result = original.apply(this, args);
     var ob = this.__ob__;
     var inserted;
@@ -788,6 +795,7 @@ var arrayMethods = Object.create(arrayProto);[
     }
     if (inserted) { ob.observeArray(inserted); }
     // notify change
+    // dep通知所有注册的观察者进行响应式处理
     ob.dep.notify();
     return result
   });
@@ -814,18 +822,23 @@ var observerState = {
  * object's property keys into getter/setters that
  * collect dependencies and dispatches updates.
  */
+// 遍历对象的所有属性并将其进行双向绑定s
 var Observer = function Observer (value) {
   this.value = value;
   this.dep = new Dep(); // 每一个observer都有一个dep
   this.vmCount = 0;
-  // 添加__ob__来标示value有对应的Observer
+  // 添加__ob__来标示value有对应的Observer，在下面121行observer方法中会进行判断
   def(value, '__ob__', this);
-  // 单独处理数组
+  // 如果是数组，将修改后可以截获响应的数组方法替换掉该数组的原型中的原生方法，达到监听数组数据变化响应的效果。
+
+  // 这里如果当前浏览器支持__proto__属性，则直接覆盖当前数组对象原型上的原生数组方法，
+  // 如果不支持该属性，则直接覆盖数组对象的原型
   if (Array.isArray(value)) {
     var augment = hasProto
-      ? protoAugment
-      : copyAugment;
+      ? protoAugment // 直接覆盖原型的方法来修改目标对象
+      : copyAugment; // 定义（覆盖）目标对象或数组的某一个方法
     augment(value, arrayMethods, arrayKeys);
+    // 如果是数组则需要遍历数组的每一个成员进行observe
     this.observeArray(value);
   } else {
     // 处理对象
@@ -886,14 +899,18 @@ function copyAugment (target, src, keys) {
  * or the existing observer if the value already has one.
  */
 // 为所有value为对象的值递归地观察
+// 单例模式
 function observe (value, asRootData) {
   if (!isObject(value)) {
     return
   }
   var ob;
+  // 判断是否有observer实例
+  // Vue的响应式数据都会有一个__ob__的属性作为标记，里面存放了该属性的观察器，也就是Observer的实例，防止重复绑定。
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__;
   } else if (
+    // 这里的判断是为了确保value是单纯的对象，而不是函数或者是Regexp等情况
     observerState.shouldConvert &&
     !isServerRendering() &&
     (Array.isArray(value) || isPlainObject(value)) &&
@@ -903,6 +920,7 @@ function observe (value, asRootData) {
     ob = new Observer(value);
   }
   if (asRootData && ob) {
+    // 如果是根数据则计数，后面Observer中的observer的asRootData非true
     ob.vmCount++;
   }
   return ob
@@ -2688,6 +2706,7 @@ var Watcher = function Watcher (
   options
 ) {
   this.vm = vm;
+  // 存放订阅者实例
   vm._watchers.push(this);
   // options
   if (options) {
@@ -2708,6 +2727,7 @@ var Watcher = function Watcher (
   this.newDepIds = new _Set();
   this.expression = expOrFn.toString();
   // parse expression for getter
+  // 把表达式expOrFn解析成getter
   if (typeof expOrFn === 'function') {
     this.getter = expOrFn;
   } else {
@@ -2731,11 +2751,20 @@ var Watcher = function Watcher (
 /**
  * Evaluate the getter, and re-collect dependencies.
  */
-// 评估getter，并重新收集依赖项。  
+// 获得getter，并重新收集依赖项。  
 Watcher.prototype.get = function get () {
+  // 将自身watcher观察者实例设置给Dep.target，用以依赖收集
   pushTarget(this);
   var value;
   var vm = this.vm;
+   /*
+    执行了getter操作，看似执行了渲染操作，其实是执行了依赖收集。
+    在将Dep.target设置为自身观察者实例以后，执行getter操作。
+    譬如说现在的的data中可能有a、b、c三个数据，getter渲染需要依赖a跟c，
+    那么在执行getter的时候就会触发a跟c两个数据的getter函数，
+    在getter函数中即可判断Dep.target是否存在然后完成依赖收集，
+    将该观察者对象放入闭包中的Dep的subs中去。
+  */
   if (this.user) {
     try {
       value = this.getter.call(vm, vm);
@@ -2747,7 +2776,7 @@ Watcher.prototype.get = function get () {
   }
   // "touch" every property so they are all tracked as
   // dependencies for deep watching
-  // 深度监听
+  // 深度递归监听
   if (this.deep) {
     traverse(value);
   }
@@ -2803,8 +2832,10 @@ Watcher.prototype.update = function update () {
   if (this.lazy) {
     this.dirty = true;
   } else if (this.sync) {
+    // 同步则直接渲染
     this.run();
   } else {
+    // 异步推送到观察者队列中，由调度者调用
     queueWatcher(this);
   }
 };
@@ -2827,8 +2858,10 @@ Watcher.prototype.run = function run () {
       this.deep
     ) {
       // set new value
+      // 设置新的值
       var oldValue = this.value;
       this.value = value;
+      // 触发回调渲染视图
       if (this.user) {
         try {
           this.cb.call(this.vm, value, oldValue);
@@ -2921,7 +2954,9 @@ var sharedPropertyDefinition = {
   get: noop,
   set: noop
 };
-
+// 添加代理
+// 将props上的数据代理到vm上
+// 我们就可以使用this.text代替this.props.text了
 function proxy (target, sourceKey, key) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -2936,8 +2971,11 @@ function initState (vm) {
   // 当前实例创建观察者
   vm._watchers = [];
   var opts = vm.$options;
+  // 初始化Props
   if (opts.props) { initProps(vm, opts.props); }
+  // 初始化Methods
   if (opts.methods) { initMethods(vm, opts.methods); }
+  // 初始化data
   if (opts.data) {
     initData(vm);
   } else {
@@ -2998,10 +3036,12 @@ function initProps (vm, propsOptions) {
 }
 
 function initData (vm) {
+  // 拿到data
   var data = vm.$options.data;
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {};
+    // 判断对象
   if (!isPlainObject(data)) {
     data = {};
     "development" !== 'production' && warn(
@@ -3011,21 +3051,28 @@ function initData (vm) {
     );
   }
   // proxy data on instance
+  /// 遍历data对象
   var keys = Object.keys(data);
   var props = vm.$options.props;
   var i = keys.length;
+  // 遍历data中的数据
   while (i--) {
+    // 保证data中的key与props中的key不重复，props优先
     if (props && hasOwn(props, keys[i])) {
       "development" !== 'production' && warn(
         "The data property \"" + (keys[i]) + "\" is already declared as a prop. " +
         "Use prop default value instead.",
         vm
       );
+      // 是否是保留字段
     } else if (!isReserved(keys[i])) {
+      // 将data上面的属性代理到了vm实例上
       proxy(vm, "_data", keys[i]);
     }
   }
   // observe data
+  // 开始对数据进行绑定，这里有尤大大的注释asRootData，
+  // 这步作为根数据，下面会进行递归observe进行对深层对象的绑定
   observe(data, true /* asRootData */);
 }
 
