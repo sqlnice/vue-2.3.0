@@ -41,7 +41,15 @@ export function createElement (
   }
   return _createElement(context, tag, data, children, normalizationType)
 }
-
+/**
+ * 创建虚拟节点
+ * @param {*} context 
+ * @param {*} tag 
+ * @param {*} data 
+ * @param {*} children 
+ * @param {*} normalizationType 
+ * @returns 
+ */
 export function _createElement (
   context: Component,
   tag?: string | Class<Component> | Function | Object,
@@ -49,6 +57,7 @@ export function _createElement (
   children?: any,
   normalizationType?: number
 ): VNode {
+  // 如果传递data且data的__ob__已经定义，说明已经被observe，上面绑定了Observer对象，直接返回空节点
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== 'production' && warn(
       `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
@@ -57,6 +66,7 @@ export function _createElement (
     )
     return createEmptyVNode()
   }
+  // tag不存在，创建空节点
   if (!tag) {
     // in case of component :is set to falsy value
     return createEmptyVNode()
@@ -76,20 +86,25 @@ export function _createElement (
   let vnode, ns
   if (typeof tag === 'string') {
     let Ctor
+    // 获取tag的名字空间
     ns = config.getTagNamespace(tag)
+    // 判断是否为保留标签
     if (config.isReservedTag(tag)) {
       // platform built-in elements
+      // 如果是保留的标签则创建一个相应节点
       vnode = new VNode(
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
     } else if (isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
+      // 从vm实例的option的components中寻找该tag，存在则就是一个组件，创建相应节点，Ctor为组件的构造类
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // unknown or unlisted namespaced elements
       // check at runtime because it may get assigned a namespace when its
       // parent normalizes children
+      // 未知的元素，在运行时检查，因为父组件可能在序列化子组件的时候分配一个名字空间
       vnode = new VNode(
         tag, data, children,
         undefined, undefined, context
@@ -97,12 +112,15 @@ export function _createElement (
     }
   } else {
     // direct component options / constructor
+    // tag不是字符串的时候则是组件的构造类
     vnode = createComponent(tag, data, context, children)
   }
   if (vnode !== undefined) {
+    // 如果有名字空间，则递归所有子节点应用该名字空间
     if (ns) applyNS(vnode, ns)
     return vnode
   } else {
+    // 如果vnode没有成功创建则创建空节点
     return createEmptyVNode()
   }
 }
