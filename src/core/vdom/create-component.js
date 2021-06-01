@@ -94,7 +94,15 @@ const componentVNodeHooks = {
 }
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
-
+/**
+ * 创建一个组件节点
+ * @param {*} Ctor 
+ * @param {*} data 
+ * @param {*} context 
+ * @param {*} children 
+ * @param {*} tag 
+ * @returns 
+ */
 export function createComponent (
   Ctor: any,
   data?: VNodeData,
@@ -115,6 +123,7 @@ export function createComponent (
 
   // if at this stage it's not a constructor or an async component factory,
   // reject.
+  // 如果在该阶段Ctor依然不是一个构造函数或者是一个异步组件工厂则直接返回
   if (typeof Ctor !== 'function') {
     if (process.env.NODE_ENV !== 'production') {
       warn(`Invalid Component definition: ${String(Ctor)}`, context)
@@ -123,11 +132,13 @@ export function createComponent (
   }
 
   // async component
+  // 处理异步组件
   if (isUndef(Ctor.cid)) {
     Ctor = resolveAsyncComponent(Ctor, baseCtor, context)
     if (Ctor === undefined) {
       // return nothing if this is indeed an async component
       // wait for the callback to trigger parent update.
+      // 如果这是一个异步组件则会不会返回任何东西（undifiened），直接return掉，等待回调函数去触发父组件更新
       return
     }
   }
